@@ -1,8 +1,17 @@
 import { Request, Response } from "express";
 import * as db from "../db";
+import { validate } from './validation';
 
 export const createOrder = async (req: Request, res: Response) => {
     const { title, author, name, shippingAddress } = req.body;
+    // Check input for forbidden characters
+    const validTitle = await validate(title);
+    const validAuthor = await validate(author);
+    const validName = await validate(name);
+    const validAddress = await validate(shippingAddress);
+    if (!validTitle || !validAuthor || !validName || !validAddress){
+        res.status(422).json({'status': 'Input contained forbidden characters'});
+    }
     const bid = await db.getBookId(title, author);
     const cid = await db.getCustomerId(name, shippingAddress);
     await db.createPurchaseOrder(bid, cid);
@@ -11,6 +20,14 @@ export const createOrder = async (req: Request, res: Response) => {
 
 export const getShipmentStatus = async (req: Request, res: Response) => {
     const { title, author, name, shippingAddress } = req.body;
+    // Check input for forbidden characters
+    const validTitle = await validate(title);
+    const validAuthor = await validate(author);
+    const validName = await validate(name);
+    const validAddress = await validate(shippingAddress);
+    if (!validTitle || !validAuthor || !validName || !validAddress){
+        res.status(422).json({'status': 'Input contained forbidden characters'});
+    }
     const bid = await db.getBookId(title, author);
     const cid = await db.getCustomerId(name, shippingAddress);
     const pid = await db.getPOIdByContents(bid, cid);
@@ -20,12 +37,23 @@ export const getShipmentStatus = async (req: Request, res: Response) => {
 
 export const shipOrder = async (req: Request, res: Response) => {
     const { pid } = req.body;
+    // Check input for forbidden characters
+    const validPid = await validate(pid);
+    if (!validPid){
+        res.status(422).json({'status': 'Input contained forbidden characters'});
+    }
     await db.shipPo(pid);
     res.status(200).json({ 'status': 'success' });
 }
 
 export const getOrderStatus = async (req: Request, res: Response) => {
     const { cid, bid } = req.body;
+    // Check input for forbidden characters
+    const validCid = await validate(cid);
+    const validBid = await validate(bid);
+    if (!validCid || !validBid){
+        res.status(422).json({'status': 'Input contained forbidden characters'});
+    }
     const pid = await db.getPOIdByContents(bid, cid);
     const shipped = await db.isPoShipped(pid);
     const addr = await db.getCustomerAddress(cid)
